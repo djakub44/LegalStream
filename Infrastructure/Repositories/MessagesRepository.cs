@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Domain.DTO;
 using Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,7 +10,7 @@ namespace Infrastructure.Repositories
     {
         Task<Message> GetMessageById(Guid id);
         Task<IEnumerable<Message>> GetMessages();
-        Task CreateMessage(CreateMessageRequest message);
+        Task CreateMessage(Message message);
     }
     public class MessagesRepository : IMessagesRepository
     {
@@ -20,9 +19,8 @@ namespace Infrastructure.Repositories
         {
             _context = context;
         }   
-        public async Task CreateMessage(CreateMessageRequest request)
+        public async Task CreateMessage(Message message)
         {
-            var message = MessageMappings.ToMessage(request);
             var existingMessage = await _context.Messages.FindAsync(message.Id);
             if (existingMessage == null)
             {

@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Infrastructure.Repositories;
-using Domain.DTO;
-
+using WebApi.DTO;
 
 namespace WebApi.Controllers
 {
@@ -33,11 +32,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest message)
+        public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest messageRequest)
         {
+            var message = MessageMappings.ToMessage(messageRequest);
             await _messagesRepository.CreateMessage(message);
-            return Created("Create Message", message);
+            return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, message);
         }
     }
 }
- 

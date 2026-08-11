@@ -1,9 +1,6 @@
 ﻿using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Domain.DTO
+namespace WebApi.DTO
 {
     public class CreateMessageRequest
     {
