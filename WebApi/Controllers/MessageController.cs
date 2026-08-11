@@ -16,6 +16,7 @@ namespace WebApi.Controllers
             _messagesRepository = messagesRepository;
         }
 
+        [HttpGet]
         public async Task<IActionResult> GetMessages()
         {
             var messages = await _messagesRepository.GetMessages();

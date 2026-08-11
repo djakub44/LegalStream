@@ -1,6 +1,7 @@
 
 using Infrastructure.Repositories;
 using Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 namespace WebApi
 {
@@ -17,7 +18,8 @@ namespace WebApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             
-            builder.Services.AddDbContext<MessageDbContext>();
+            builder.Services.AddDbContext<MessageDbContext>(options =>
+                options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
             builder.Services.AddScoped<IMessagesRepository, MessagesRepository>();
 
             var app = builder.Build();

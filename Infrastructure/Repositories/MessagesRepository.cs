@@ -31,8 +31,7 @@ namespace Infrastructure.Repositories
             
         public async Task<Message> GetMessageById(Guid id)
         {
-            _context.Messages.AsNoTracking();
-            var message = await _context.Messages.FindAsync(id);
+            var message = await _context.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
             if (message == null)
             {
                 throw new KeyNotFoundException($"Message with ID {id} not found.");
@@ -42,8 +41,7 @@ namespace Infrastructure.Repositories
 
         public async Task<IEnumerable<Message>> GetMessages()
         {
-            _context.Messages.AsNoTracking();
-            var messages = await _context.Messages.ToListAsync();
+            var messages = await _context.Messages.AsNoTracking().ToListAsync();
             return messages;
         }
     }
