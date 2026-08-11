@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Domain.Entities;
 using Infrastructure.Repositories;
+using Domain.DTO;
 
 
 namespace WebApi.Controllers
@@ -32,10 +33,10 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMessage([FromBody] Message message)
+        public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest message)
         {
             await _messagesRepository.CreateMessage(message);
-            return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, message);
+            return Created("Create Message", message);
         }
     }
 }

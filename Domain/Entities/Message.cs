@@ -14,7 +14,7 @@ namespace Domain.Entities
 
     public enum MessageType
     {
-        In,
-        Out,
+        Swift,
+        XML,
     }
 }
