@@ -12,6 +12,7 @@ namespace MqWorker
         private readonly ConnectionFactory _factory = new ConnectionFactory();
         private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
         {
+            PropertyNameCaseInsensitive = true,
             Converters = { new JsonStringEnumConverter() }
         };
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
