@@ -10,6 +10,10 @@ namespace MqWorker
     public class Worker(ILogger<Worker> logger, IServiceScopeFactory _scopeFactory) : BackgroundService
     {
         private readonly ConnectionFactory _factory = new ConnectionFactory();
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        {
+            Converters = { new JsonStringEnumConverter() }
+        };
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             
@@ -31,9 +35,7 @@ namespace MqWorker
                 var body = ea.Body.ToArray();
                 var rawMessage = System.Text.Encoding.UTF8.GetString(body);
 
-                var options = new JsonSerializerOptions();
-                options.Converters.Add(new JsonStringEnumConverter());
-                var messageReceived = JsonSerializer.Deserialize<MessageReceived>(rawMessage, options);
+                var messageReceived = JsonSerializer.Deserialize<MessageReceived>(rawMessage, _jsonOptions);
 
                 if (messageReceived == null)
                 {
@@ -51,8 +53,6 @@ namespace MqWorker
                     var messageEntity = MessageMappingsMq.ToMessage(messageReceived);
                     await repository.AddMessage(messageEntity);
                 }
-                    
-                await Task.Yield();
             };
             
             await channel.BasicConsumeAsync("messages", true, consumer);
