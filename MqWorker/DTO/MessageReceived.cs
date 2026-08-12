@@ -1,20 +1,24 @@
 ﻿using Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace WebApi.DTO
+namespace MqWorker.DTO
 {
-    public class CreateMessageRequest
+    public class MessageReceived
     {
         public required MessageType Type { get; set; }
         public required string Payload { get; set; }
+        public required Guid Id { get; set; }
     }
 
-    public static class MessageMappingsWebApi
+    public static class MessageMappingsMq
     {
-        public static Message ToMessage(CreateMessageRequest request)
+        public static Message ToMessage(MessageReceived request)
         {
             return new Message
             {
-                Id = Guid.NewGuid(),
+                Id = request.Id,
                 Type = request.Type,
                 Payload = request.Payload,
                 ReceivedAt = DateTime.UtcNow

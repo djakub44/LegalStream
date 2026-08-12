@@ -10,6 +10,14 @@ services:
       - "5432:5432"
     volumes:
       - legalstream-data:/var/lib/postgresql/data
-
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: legalstream-mq
+    ports:
+      - "5672:5672"     # AMQP — tędy łączy się aplikacja
+      - "15672:15672"   # panel webowy — http://localhost:15672 (guest/guest)
+    volumes:
+      - legalstream-mq-data:/var/lib/rabbitmq
 volumes:
   legalstream-data:
+  legalstream-mq-data:

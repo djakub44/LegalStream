@@ -10,16 +10,16 @@ namespace Infrastructure.Repositories
     {
         Task<Message> GetMessageById(Guid id);
         Task<IEnumerable<Message>> GetMessages();
-        Task CreateMessage(Message message);
+        Task AddMessage(Message message);
     }
     public class MessagesRepository : IMessagesRepository
     {
-        private readonly MessageDbContext _context;
-        public MessagesRepository(MessageDbContext context)
+        private readonly MessagesDbContext _context;
+        public MessagesRepository(MessagesDbContext context)
         {
             _context = context;
         }   
-        public async Task CreateMessage(Message message)
+        public async Task AddMessage(Message message)
         {
             var existingMessage = await _context.Messages.FindAsync(message.Id);
             if (existingMessage == null)

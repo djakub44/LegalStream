@@ -23,7 +23,7 @@ namespace WebApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             
-            builder.Services.AddDbContext<MessageDbContext>(options =>
+            builder.Services.AddDbContext<MessagesDbContext>(options =>
                 options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
             builder.Services.AddScoped<IMessagesRepository, MessagesRepository>();
 

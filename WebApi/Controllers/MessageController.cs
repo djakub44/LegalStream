@@ -34,8 +34,8 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest messageRequest)
         {
-            var message = MessageMappings.ToMessage(messageRequest);
-            await _messagesRepository.CreateMessage(message);
+            var message = MessageMappingsWebApi.ToMessage(messageRequest);
+            await _messagesRepository.AddMessage(message);
             return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, message);
         }
     }
