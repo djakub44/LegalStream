@@ -54,9 +54,11 @@ namespace MqWorker
                     var messageEntity = MessageMappingsMq.ToMessage(messageReceived);
                     await repository.AddMessage(messageEntity);
                 }
+                await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+                await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
             };
             
-            await channel.BasicConsumeAsync("messages", true, consumer);
+            await channel.BasicConsumeAsync(queue: "messages", autoAck: false, consumer: consumer);
             
             while (!stoppingToken.IsCancellationRequested)
             {
