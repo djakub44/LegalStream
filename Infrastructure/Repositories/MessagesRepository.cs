@@ -34,18 +34,6 @@ namespace Infrastructure.Repositories
             {
                 _logger.LogInformation("A message with ID {messageId} already exists.", message.Id);
             }
-            catch (DbUpdateException ex)
-            {
-                // Handle other database update exceptions
-                _logger.LogError(ex, "An error occurred while adding the message to the database.");
-                throw new Exception("An error occurred while adding the message to the database.", ex);
-            }
-            catch (Exception ex)
-            {
-                // Handle other exceptions
-                throw new Exception("An unexpected error occurred while adding the message.", ex);
-            }
-
         }
             
         public async Task<Message> GetMessageById(Guid id)
