@@ -27,7 +27,13 @@ namespace MqWorker
             IConnection conn = await _factory.CreateConnectionAsync();
             IChannel channel = await conn.CreateChannelAsync();
 
-            var messagesQueue = await channel.QueueDeclareAsync("messages", durable: true, exclusive: false, autoDelete: false  );
+            await channel.ExchangeDeclareAsync("messages.dlx", ExchangeType.Fanout, durable: true);
+            await channel.QueueDeclareAsync("messages.dead", durable: true, exclusive: false, autoDelete: false);
+            await channel.QueueBindAsync("messages.dead", "messages.dlx", routingKey: "");
+
+            var args = new Dictionary<string, object?> { { "x-dead-letter-exchange", "messages.dlx" } };
+
+            await channel.QueueDeclareAsync("messages", durable: true, exclusive: false, autoDelete: false, arguments: args);
 
             var consumer = new AsyncEventingBasicConsumer(channel);
             
@@ -35,13 +41,22 @@ namespace MqWorker
             {
                 var body = ea.Body.ToArray();
                 var rawMessage = System.Text.Encoding.UTF8.GetString(body);
-
-                var messageReceived = JsonSerializer.Deserialize<MessageReceived>(rawMessage, _jsonOptions);
-
+                MessageReceived? messageReceived = null;
+                try
+                {
+                    messageReceived = JsonSerializer.Deserialize<MessageReceived>(rawMessage, _jsonOptions);
+                }
+                catch(JsonException ex)
+                {
+                    logger.LogError(ex, "Error deserializing message: {rawMessage}", rawMessage);
+                    
+                    await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
+                    return;
+                }
                 if (messageReceived == null)
                 {
-                    //here will be dead letter logic
-                    logger.LogWarning("Received message could not be deserialized: {rawMessage}", rawMessage);
+                    logger.LogWarning("Received message is null: {rawMessage}", rawMessage);
+                    await channel.BasicNackAsync(deliveryTag: ea.DeliveryTag, multiple: false, requeue: false);
                     return;
                 }
                 
@@ -54,10 +69,12 @@ namespace MqWorker
                     var messageEntity = MessageMappingsMq.ToMessage(messageReceived);
                     await repository.AddMessage(messageEntity);
                 }
-                await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
+                
                 await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
             };
-            
+
+
+            await channel.BasicQosAsync(prefetchSize: 0, prefetchCount: 1, global: false);
             await channel.BasicConsumeAsync(queue: "messages", autoAck: false, consumer: consumer);
             
             while (!stoppingToken.IsCancellationRequested)
