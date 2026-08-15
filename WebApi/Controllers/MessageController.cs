@@ -38,7 +38,7 @@ namespace WebApi.Controllers
         {
             var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(messageRequest);
             await _outboxRepository.AddOutboxRequest(outboxRequest);
-            return AcceptedAtAction(nameof(GetMessage), new { id = outboxRequest.Id }, outboxRequest);
+            return Accepted(outboxRequest);
         }
     }
 }
