@@ -36,17 +36,9 @@ namespace WebApi.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest messageRequest)
         {
-            var message = MessageMappingsWebApi.ToMessage(messageRequest);
-            await _messagesRepository.AddMessage(message);
-            return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, message);
-        }
-        [HttpPost]
-        [Route("outbox")]
-        public async Task<IActionResult> CreateMessageByMq([FromBody] CreateMessageRequest request)
-        {
-            var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(request);
+            var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(messageRequest);
             await _outboxRepository.AddOutboxRequest(outboxRequest);
-            return AcceptedAtAction(nameof(GetMessage), new { id  = outboxRequest.Id }, outboxRequest);
+            return AcceptedAtAction(nameof(GetMessage), new { id = outboxRequest.Id }, outboxRequest);
         }
     }
 }
