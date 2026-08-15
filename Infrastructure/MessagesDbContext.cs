@@ -13,5 +13,6 @@ namespace Infrastructure
         {
         }
         public DbSet<Domain.Entities.Message> Messages { get; set; }
+        public DbSet<Domain.Entities.OutboxRequest> OutboxRequests { get; set; }
     }
 }

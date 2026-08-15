@@ -38,11 +38,8 @@ namespace Infrastructure.Repositories
             
         public async Task<Message> GetMessageById(Guid id)
         {
-            var message = await _context.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id);
-            if (message == null)
-            {
+            var message = await _context.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id) ?? 
                 throw new KeyNotFoundException($"Message with ID {id} not found.");
-            }
             return message;
         }
 

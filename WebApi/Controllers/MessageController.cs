@@ -10,10 +10,12 @@ namespace WebApi.Controllers
     public class MessageController : ControllerBase
     {
         private readonly IMessagesRepository _messagesRepository;
+        private readonly IOutboxRepository _outboxRepository;
 
-        public MessageController(IMessagesRepository messagesRepository)
+        public MessageController(IMessagesRepository messagesRepository, IOutboxRepository outboxRepository)
         {
             _messagesRepository = messagesRepository;
+            _outboxRepository = outboxRepository;
         }
 
         [HttpGet]
@@ -37,6 +39,14 @@ namespace WebApi.Controllers
             var message = MessageMappingsWebApi.ToMessage(messageRequest);
             await _messagesRepository.AddMessage(message);
             return CreatedAtAction(nameof(GetMessage), new { id = message.Id }, message);
+        }
+        [HttpPost]
+        [Route("outbox")]
+        public async Task<IActionResult> CreateMessageByMq([FromBody] CreateMessageRequest request)
+        {
+            var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(request);
+            await _outboxRepository.AddOutboxRequest(outboxRequest);
+            return AcceptedAtAction(nameof(GetMessage), new { id  = outboxRequest.Id }, outboxRequest);
         }
     }
 }

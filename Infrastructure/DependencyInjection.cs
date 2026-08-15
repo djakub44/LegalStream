@@ -15,6 +15,7 @@ namespace Infrastructure
             services.AddDbContext<MessagesDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("Postgres")));
             services.AddScoped<IMessagesRepository, MessagesRepository>();
+            services.AddScoped<IOutboxRepository, OutboxRepository>();
             return services;
         }
     }
