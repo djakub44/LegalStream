@@ -22,7 +22,7 @@ namespace WebApi.DTO
             return new OutboxRequest
             {
                 Id = Guid.NewGuid(),
-                Payload = JsonSerializer.Serialize(request, _jsonOptions),
+                Payload = JsonSerializer.Serialize(MessageMappingsWebApi.ToMessage(request), _jsonOptions),
                 CreatedAt = DateTime.UtcNow
             };
         }
