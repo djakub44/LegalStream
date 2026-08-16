@@ -10,10 +10,12 @@ namespace Infrastructure.Repositories
 {
     public interface IOutboxRepository
     {
-        Task<OutboxRequest> GetOutboxRequestById(Guid id);
-        Task<IEnumerable<OutboxRequest>> GetOutboxRequests();
-        Task AddOutboxRequest(OutboxRequest outboxRequest);
-        Task DeleteOutboxRequest(Guid id);
+        Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id);
+        Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync();
+        Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync();
+        Task AddOutboxRequestAsync(OutboxRequest outboxRequest);
+        Task DeleteOutboxRequestAsync(Guid id);
+        Task UpdateOutboxRequestAsync(Guid id);
     }
     public class OutboxRepository : IOutboxRepository
     {
@@ -25,7 +27,7 @@ namespace Infrastructure.Repositories
             _logger = logger;
         }
 
-        public async Task AddOutboxRequest(OutboxRequest outboxRequest)
+        public async Task AddOutboxRequestAsync(OutboxRequest outboxRequest)
         {
             try
             {
@@ -38,7 +40,7 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task DeleteOutboxRequest(Guid id)
+        public async Task DeleteOutboxRequestAsync(Guid id)
         {
             var outboxRequest = await _context.OutboxRequests.FindAsync(id);
             if (outboxRequest != null)
@@ -48,7 +50,7 @@ namespace Infrastructure.Repositories
             }
         }
 
-        public async Task<OutboxRequest> GetOutboxRequestById(Guid id)
+        public async Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id)
         {
             var outboxRequest = await _context.OutboxRequests.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id) ??
                 throw new KeyNotFoundException($"Outbox request with ID {id} not found.");
@@ -56,10 +58,26 @@ namespace Infrastructure.Repositories
         }
         
 
-        public async Task<IEnumerable<OutboxRequest>> GetOutboxRequests()
+        public async Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync()
         {
             var outboxRequests = await _context.OutboxRequests.AsNoTracking().ToListAsync();
             return outboxRequests;
+        }
+        public async Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync()
+        {
+            var unpublishedRequests = await _context.OutboxRequests.AsNoTracking()
+                .Where(r => r.PublishedAt == null)
+                .ToListAsync();
+            return unpublishedRequests;
+        }
+        public async Task UpdateOutboxRequestAsync(Guid id)
+        {
+            var outboxRequest = await _context.OutboxRequests.FindAsync(id);
+            if (outboxRequest != null)
+            {
+                outboxRequest.PublishedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+            }
         }
     }
 }

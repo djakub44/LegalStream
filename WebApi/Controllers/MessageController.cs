@@ -21,7 +21,7 @@ namespace WebApi.Controllers
         [HttpGet]
         public async Task<IActionResult> GetMessages()
         {
-            var messages = await _messagesRepository.GetMessages();
+            var messages = await _messagesRepository.GetMessagesAsync();
             return Ok(messages);
         }
 
@@ -29,7 +29,7 @@ namespace WebApi.Controllers
         [Route("{id}")]
         public async Task<IActionResult> GetMessage(Guid id)
         {
-            var message = await _messagesRepository.GetMessageById(id);
+            var message = await _messagesRepository.GetMessageByIdAsync(id);
             return Ok(message);
         }
 
@@ -37,7 +37,7 @@ namespace WebApi.Controllers
         public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest messageRequest)
         {
             var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(messageRequest);
-            await _outboxRepository.AddOutboxRequest(outboxRequest);
+            await _outboxRepository.AddOutboxRequestAsync(outboxRequest);
             return Accepted(outboxRequest);
         }
     }

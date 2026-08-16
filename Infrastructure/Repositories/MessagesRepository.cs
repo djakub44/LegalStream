@@ -10,9 +10,9 @@ namespace Infrastructure.Repositories
 {
     public interface IMessagesRepository
     {
-        Task<Message> GetMessageById(Guid id);
-        Task<IEnumerable<Message>> GetMessages();
-        Task AddMessage(Message message);
+        Task<Message> GetMessageByIdAsync(Guid id);
+        Task<IEnumerable<Message>> GetMessagesAsync();
+        Task AddMessageAsync(Message message);
     }
     public class MessagesRepository : IMessagesRepository
     {
@@ -23,7 +23,7 @@ namespace Infrastructure.Repositories
             _context = context;
             _logger = logger;
         }   
-        public async Task AddMessage(Message message)
+        public async Task AddMessageAsync(Message message)
         {
             try
             {
@@ -36,14 +36,14 @@ namespace Infrastructure.Repositories
             }
         }
             
-        public async Task<Message> GetMessageById(Guid id)
+        public async Task<Message> GetMessageByIdAsync(Guid id)
         {
             var message = await _context.Messages.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id) ?? 
                 throw new KeyNotFoundException($"Message with ID {id} not found.");
             return message;
         }
 
-        public async Task<IEnumerable<Message>> GetMessages()
+        public async Task<IEnumerable<Message>> GetMessagesAsync()
         {
             var messages = await _context.Messages.AsNoTracking().ToListAsync();
             return messages;

@@ -1,8 +1,6 @@
 using Infrastructure;
-using Infrastructure.Repositories;
-using Microsoft.EntityFrameworkCore;
 
-namespace MqConsumerWorker
+namespace MqRelayWorker
 {
     public class Program
     {

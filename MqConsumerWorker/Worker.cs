@@ -67,7 +67,7 @@ namespace MqConsumerWorker
                 {
                     var repository = scope.ServiceProvider.GetRequiredService<IMessagesRepository>();
                     var messageEntity = MessageMappingsMq.ToMessage(messageReceived);
-                    await repository.AddMessage(messageEntity);
+                    await repository.AddMessageAsync(messageEntity);
                 }
                 
                 await channel.BasicAckAsync(deliveryTag: ea.DeliveryTag, multiple: false);
