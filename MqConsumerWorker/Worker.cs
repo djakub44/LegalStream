@@ -1,10 +1,10 @@
 using Infrastructure.Repositories;
-using MqWorker.DTO;
+using MqConsumerWorker.DTO;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-namespace MqWorker
+namespace MqConsumerWorker
 {
     
     public class Worker(ILogger<Worker> logger, IServiceScopeFactory _scopeFactory) : BackgroundService

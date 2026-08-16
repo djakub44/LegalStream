@@ -2,7 +2,7 @@ using Infrastructure;
 using Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace MqWorker
+namespace MqConsumerWorker
 {
     public class Program
     {
