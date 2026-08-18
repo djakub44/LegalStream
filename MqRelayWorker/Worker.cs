@@ -5,6 +5,7 @@ using RabbitMQ.Client;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 
 namespace MqRelayWorker
 {
@@ -38,16 +39,18 @@ namespace MqRelayWorker
 
             while (!stoppingToken.IsCancellationRequested)
             {
+                var delay = 10000;
+
                 var scopeRead = _scopeFactory.CreateScope();
                 IEnumerable<OutboxRequest> requests = null!;
                 using (scopeRead)
                 {
                     var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
-                    requests = await repository.GetUnpublishedOutboxRequestsAsync();
+                    requests = await repository.GetUnpublishedOutboxRequestsWithLock();
                     
-                }
-                if (requests.Any())
-                {
+                    if (requests.Any())
+                        delay = 0;
+
                     foreach (var request in requests)
                     {
                         await channel.BasicPublishAsync(
@@ -56,17 +59,9 @@ namespace MqRelayWorker
                             body: Encoding.UTF8.GetBytes(request.Payload));
                     }
 
-                    var scopeSave = _scopeFactory.CreateScope();
-                    using (scopeSave)
-                    {
-                        var repository = scopeSave.ServiceProvider.GetRequiredService<IOutboxRepository>();
-                        await repository.MarkPublishedAsync(requests);
-                    }
+                    await repository.MarkPublishedAsync(requests);
                 }
-                else
-                {
-                    await Task.Delay(10000, stoppingToken);
-                }
+                await Task.Delay(delay, stoppingToken);
             }
         }
     }

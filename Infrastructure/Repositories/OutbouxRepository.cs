@@ -5,7 +5,7 @@ using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.Text;
-
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 namespace Infrastructure.Repositories
 {
     public interface IOutboxRepository
@@ -13,6 +13,7 @@ namespace Infrastructure.Repositories
         Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id);
         Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync();
         Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync();
+        Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsWithLock();
         Task AddOutboxRequestsAsync(IEnumerable<OutboxRequest> outboxRequests);
         Task DeleteOutboxRequestAsync(Guid id);
         Task UpdateOutboxRequestAsync(Guid id);
@@ -71,6 +72,13 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
             return unpublishedRequests;
         }
+        public async Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsWithLock()
+        {
+            var outboxRequests = await _context.OutboxRequests
+                .FromSqlRaw("SELECT * FROM \"OutboxRequests\" WHERE \"PublishedAt\" IS NULL ORDER BY \"CreatedAt\" LIMIT 500 FOR UPDATE SKIP LOCKED")
+                .ToListAsync();
+            return outboxRequests;
+        }
         public async Task UpdateOutboxRequestAsync(Guid id)
         {
             var outboxRequest = await _context.OutboxRequests.FindAsync(id);
@@ -82,9 +90,10 @@ namespace Infrastructure.Repositories
         }
         public async Task MarkPublishedAsync(IEnumerable<OutboxRequest> outboxRequests)
         {
+            var publishedAt = DateTime.UtcNow;
             await _context.OutboxRequests.
                 Where(r => outboxRequests.Select(or => or.Id).Contains(r.Id)).
-                ExecuteUpdateAsync(setters => setters.SetProperty(m => m.PublishedAt, DateTime.UtcNow));
+                ExecuteUpdateAsync(setters => setters.SetProperty(m => m.PublishedAt, publishedAt));
         }
     }
 }
