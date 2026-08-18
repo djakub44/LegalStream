@@ -46,6 +46,8 @@ namespace MqRelayWorker
                 using (scopeRead)
                 {
                     var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
+                    await repository.BeginTransactionAsync();
+
                     requests = await repository.GetUnpublishedOutboxRequestsWithLock();
                     
                     if (requests.Any())
@@ -60,6 +62,8 @@ namespace MqRelayWorker
                     }
 
                     await repository.MarkPublishedAsync(requests);
+
+                    await repository.CommitTransactionAsync();
                 }
                 await Task.Delay(delay, stoppingToken);
             }

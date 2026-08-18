@@ -10,16 +10,13 @@ namespace Infrastructure.Repositories
 {
     public interface IOutboxRepository
     {
-        Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id);
-        Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync();
-        Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync();
+        Task BeginTransactionAsync();
+        Task CommitTransactionAsync();
         Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsWithLock();
         Task AddOutboxRequestsAsync(IEnumerable<OutboxRequest> outboxRequests);
-        Task DeleteOutboxRequestAsync(Guid id);
-        Task UpdateOutboxRequestAsync(Guid id);
         Task MarkPublishedAsync(IEnumerable<OutboxRequest> outboxRequests);
     }
-    public class OutboxRepository : IOutboxRepository
+    public class OutboxRepository : IOutboxRepository, IDisposable
     {
         private readonly MessagesDbContext _context;
         private readonly ILogger<OutboxRepository> _logger;
@@ -28,7 +25,14 @@ namespace Infrastructure.Repositories
             _context = context;
             _logger = logger;
         }
-
+        public Task BeginTransactionAsync()
+        {
+            return _context.Database.BeginTransactionAsync();
+        }
+        public Task CommitTransactionAsync()
+        {
+            return _context.Database.CommitTransactionAsync();
+        }
         public async Task AddOutboxRequestsAsync(IEnumerable<OutboxRequest> outboxRequests)
         {
             try
@@ -38,39 +42,8 @@ namespace Infrastructure.Repositories
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException pex && pex.SqlState == PostgresErrorCodes.UniqueViolation)
             {
-                _logger.LogInformation("An outbox request with ID {outboxRequestId} already exists.", pex.Line);
+                _logger.LogInformation("Duplicate outbox request skipped");
             }
-        }
-
-        public async Task DeleteOutboxRequestAsync(Guid id)
-        {
-            var outboxRequest = await _context.OutboxRequests.FindAsync(id);
-            if (outboxRequest != null)
-            {
-                _context.OutboxRequests.Remove(outboxRequest);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public async Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id)
-        {
-            var outboxRequest = await _context.OutboxRequests.AsNoTracking().FirstOrDefaultAsync(m => m.Id == id) ??
-                throw new KeyNotFoundException($"Outbox request with ID {id} not found.");
-            return outboxRequest;
-        }
-        
-
-        public async Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync()
-        {
-            var outboxRequests = await _context.OutboxRequests.AsNoTracking().ToListAsync();
-            return outboxRequests;
-        }
-        public async Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync()
-        {
-            var unpublishedRequests = await _context.OutboxRequests.AsNoTracking()
-                .Where(r => r.PublishedAt == null)
-                .ToListAsync();
-            return unpublishedRequests;
         }
         public async Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsWithLock()
         {
@@ -79,21 +52,18 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
             return outboxRequests;
         }
-        public async Task UpdateOutboxRequestAsync(Guid id)
-        {
-            var outboxRequest = await _context.OutboxRequests.FindAsync(id);
-            if (outboxRequest != null)
-            {
-                outboxRequest.PublishedAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-            }
-        }
         public async Task MarkPublishedAsync(IEnumerable<OutboxRequest> outboxRequests)
         {
             var publishedAt = DateTime.UtcNow;
             await _context.OutboxRequests.
                 Where(r => outboxRequests.Select(or => or.Id).Contains(r.Id)).
                 ExecuteUpdateAsync(setters => setters.SetProperty(m => m.PublishedAt, publishedAt));
+        }
+
+        public void Dispose()
+        {
+            _context.Database.CurrentTransaction?.Dispose();
+            _context?.Dispose();
         }
     }
 }
