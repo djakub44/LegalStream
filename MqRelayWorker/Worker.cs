@@ -44,25 +44,29 @@ namespace MqRelayWorker
                 {
                     var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
                     requests = await repository.GetUnpublishedOutboxRequestsAsync();
-                }
-
-                foreach(var request in requests)
-                {
-                    await channel.BasicPublishAsync(
-                        exchange: string.Empty,
-                        routingKey: "messages", 
-                        body: Encoding.UTF8.GetBytes(request.Payload));
                     
+                }
+                if (requests.Any())
+                {
+                    foreach (var request in requests)
+                    {
+                        await channel.BasicPublishAsync(
+                            exchange: string.Empty,
+                            routingKey: "messages",
+                            body: Encoding.UTF8.GetBytes(request.Payload));
+                    }
+
                     var scopeSave = _scopeFactory.CreateScope();
                     using (scopeSave)
                     {
                         var repository = scopeSave.ServiceProvider.GetRequiredService<IOutboxRepository>();
-                        request.PublishedAt = DateTime.UtcNow;
-                        await repository.UpdateOutboxRequestAsync(request.Id);
+                        await repository.MarkPublishedAsync(requests);
                     }
                 }
-
-                await Task.Delay(1000, stoppingToken);
+                else
+                {
+                    await Task.Delay(10000, stoppingToken);
+                }
             }
         }
     }

@@ -34,11 +34,11 @@ namespace WebApi.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateMessage([FromBody] CreateMessageRequest messageRequest)
+        public async Task<IActionResult> CreateMessages([FromBody] IEnumerable<CreateMessageRequest> messageRequests)
         {
-            var outboxRequest = OutboxRequestMappings.CreateOutboxRequest(messageRequest);
-            await _outboxRepository.AddOutboxRequestAsync(outboxRequest);
-            return Accepted(outboxRequest);
+            var outboxRequests = OutboxRequestMappings.CreateOutboxRequests(messageRequests);
+            await _outboxRepository.AddOutboxRequestsAsync(outboxRequests);
+            return Accepted(outboxRequests);
         }
     }
 }

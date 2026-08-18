@@ -17,14 +17,14 @@ namespace WebApi.DTO
             PropertyNameCaseInsensitive = true,
             Converters = { new JsonStringEnumConverter() }
         };
-        public static OutboxRequest CreateOutboxRequest(CreateMessageRequest request)
+        public static IEnumerable<OutboxRequest> CreateOutboxRequests(IEnumerable<CreateMessageRequest> requests)
         {
-            return new OutboxRequest
+            return requests.Select(request => new OutboxRequest
             {
                 Id = Guid.NewGuid(),
                 Payload = JsonSerializer.Serialize(MessageMappingsWebApi.ToMessage(request), _jsonOptions),
                 CreatedAt = DateTime.UtcNow
-            };
+            });
         }
     }
 }

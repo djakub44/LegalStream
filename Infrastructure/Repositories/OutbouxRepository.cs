@@ -13,9 +13,10 @@ namespace Infrastructure.Repositories
         Task<OutboxRequest> GetOutboxRequestByIdAsync(Guid id);
         Task<IEnumerable<OutboxRequest>> GetOutboxRequestsAsync();
         Task<IEnumerable<OutboxRequest>> GetUnpublishedOutboxRequestsAsync();
-        Task AddOutboxRequestAsync(OutboxRequest outboxRequest);
+        Task AddOutboxRequestsAsync(IEnumerable<OutboxRequest> outboxRequests);
         Task DeleteOutboxRequestAsync(Guid id);
         Task UpdateOutboxRequestAsync(Guid id);
+        Task MarkPublishedAsync(IEnumerable<OutboxRequest> outboxRequests);
     }
     public class OutboxRepository : IOutboxRepository
     {
@@ -27,16 +28,16 @@ namespace Infrastructure.Repositories
             _logger = logger;
         }
 
-        public async Task AddOutboxRequestAsync(OutboxRequest outboxRequest)
+        public async Task AddOutboxRequestsAsync(IEnumerable<OutboxRequest> outboxRequests)
         {
             try
             {
-                _context.OutboxRequests.Add(outboxRequest);
+                _context.OutboxRequests.AddRange(outboxRequests);
                 await _context.SaveChangesAsync();
             }
             catch (DbUpdateException ex) when (ex.InnerException is PostgresException pex && pex.SqlState == PostgresErrorCodes.UniqueViolation)
             {
-                _logger.LogInformation("An outbox request with ID {outboxRequestId} already exists.", outboxRequest.Id);
+                _logger.LogInformation("An outbox request with ID {outboxRequestId} already exists.", pex.Line);
             }
         }
 
@@ -78,6 +79,12 @@ namespace Infrastructure.Repositories
                 outboxRequest.PublishedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
+        }
+        public async Task MarkPublishedAsync(IEnumerable<OutboxRequest> outboxRequests)
+        {
+            await _context.OutboxRequests.
+                Where(r => outboxRequests.Select(or => or.Id).Contains(r.Id)).
+                ExecuteUpdateAsync(setters => setters.SetProperty(m => m.PublishedAt, DateTime.UtcNow));
         }
     }
 }
