@@ -12,11 +12,6 @@ namespace MqRelayWorker
     public class Worker(ILogger<Worker> logger, IServiceScopeFactory _scopeFactory) : BackgroundService
     {
         private readonly ConnectionFactory _factory = new ConnectionFactory();
-        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true,
-            Converters = { new JsonStringEnumConverter() }
-        };
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
 
