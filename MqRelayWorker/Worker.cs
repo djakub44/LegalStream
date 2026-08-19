@@ -39,41 +39,55 @@ namespace MqRelayWorker
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var delay = 1000;
-
-                var scopeRead = _scopeFactory.CreateScope();
-                IEnumerable<OutboxRequest> requests = null!;
-                using (scopeRead)
+                try
                 {
-                    var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
-                    await repository.BeginTransactionAsync(stoppingToken);
-                    try
+                    var delay = 1000;
+
+                    var scopeRead = _scopeFactory.CreateScope();
+                    IEnumerable<OutboxRequest> requests = null!;
+                    using (scopeRead)
                     {
-                        requests = await repository.GetUnpublishedOutboxRequestsWithLock(stoppingToken);
-
-                        if (requests.Any())
-                            delay = 0;
-
-                        foreach (var request in requests)
+                        var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
+                        await repository.BeginTransactionAsync(stoppingToken);
+                        try
                         {
-                            await channel.BasicPublishAsync(
-                                exchange: string.Empty,
-                                routingKey: "messages",
-                                body: Encoding.UTF8.GetBytes(request.Payload));
+                            requests = await repository.GetUnpublishedOutboxRequestsWithLock(stoppingToken);
+
+                            if (requests.Any())
+                                delay = 0;
+
+                            foreach (var request in requests)
+                            {
+                                await channel.BasicPublishAsync(
+                                    exchange: string.Empty,
+                                    routingKey: "messages",
+                                    body: Encoding.UTF8.GetBytes(request.Payload));
+                            }
+
+                            await repository.MarkPublishedAsync(requests, stoppingToken);
+
+                            await repository.CommitTransactionAsync(stoppingToken);
+
                         }
-
-                        await repository.MarkPublishedAsync(requests, stoppingToken);
-
-                        await repository.CommitTransactionAsync(stoppingToken);
-
+                        catch
+                        {
+                            await repository.RollbackTransactionAsync(CancellationToken.None);
+                            throw;
+                        }
                     }
-                    catch
-                    {
-                        await repository.RollbackTransactionAsync(CancellationToken.None);
-                        throw;
-                    }
-                                    }
-                await Task.Delay(delay, stoppingToken);
+                    await Task.Delay(delay, stoppingToken);
+                }
+                catch(OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    // Graceful shutdown
+                    logger.LogInformation("Worker is stopping gracefully.");
+                }
+                catch(Exception ex)
+                {
+                    logger.LogError(ex, "An error occurred while processing outbox requests.");
+                    await Task.Delay(5000, stoppingToken);
+                }
+                
             }
         }
     }
