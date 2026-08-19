@@ -69,7 +69,7 @@ namespace MqRelayWorker
                     }
                     catch
                     {
-                        await repository.RollbackTransactionAsync(stoppingToken );
+                        await repository.RollbackTransactionAsync(CancellationToken.None);
                         throw;
                     }
                                     }

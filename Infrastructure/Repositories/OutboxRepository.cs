@@ -32,7 +32,7 @@ namespace Infrastructure.Repositories
         }
         public Task CommitTransactionAsync(CancellationToken cancellationToken)
         {
-            return _context.Database.CommitTransactionAsync();
+            return _context.Database.CommitTransactionAsync(cancellationToken);
         }
         public Task RollbackTransactionAsync(CancellationToken cancellationToken)
         {
