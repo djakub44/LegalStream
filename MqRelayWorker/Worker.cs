@@ -39,32 +39,40 @@ namespace MqRelayWorker
 
             while (!stoppingToken.IsCancellationRequested)
             {
-                var delay = 10000;
+                var delay = 1000;
 
                 var scopeRead = _scopeFactory.CreateScope();
                 IEnumerable<OutboxRequest> requests = null!;
                 using (scopeRead)
                 {
                     var repository = scopeRead.ServiceProvider.GetRequiredService<IOutboxRepository>();
-                    await repository.BeginTransactionAsync();
-
-                    requests = await repository.GetUnpublishedOutboxRequestsWithLock();
-                    
-                    if (requests.Any())
-                        delay = 0;
-
-                    foreach (var request in requests)
+                    await repository.BeginTransactionAsync(stoppingToken);
+                    try
                     {
-                        await channel.BasicPublishAsync(
-                            exchange: string.Empty,
-                            routingKey: "messages",
-                            body: Encoding.UTF8.GetBytes(request.Payload));
+                        requests = await repository.GetUnpublishedOutboxRequestsWithLock(stoppingToken);
+
+                        if (requests.Any())
+                            delay = 0;
+
+                        foreach (var request in requests)
+                        {
+                            await channel.BasicPublishAsync(
+                                exchange: string.Empty,
+                                routingKey: "messages",
+                                body: Encoding.UTF8.GetBytes(request.Payload));
+                        }
+
+                        await repository.MarkPublishedAsync(requests, stoppingToken);
+
+                        await repository.CommitTransactionAsync(stoppingToken);
+
                     }
-
-                    await repository.MarkPublishedAsync(requests);
-
-                    await repository.CommitTransactionAsync();
-                }
+                    catch
+                    {
+                        await repository.RollbackTransactionAsync(stoppingToken );
+                        throw;
+                    }
+                                    }
                 await Task.Delay(delay, stoppingToken);
             }
         }

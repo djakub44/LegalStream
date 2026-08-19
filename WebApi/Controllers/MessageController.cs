@@ -37,7 +37,7 @@ namespace WebApi.Controllers
         public async Task<IActionResult> CreateMessages([FromBody] IEnumerable<CreateMessageRequest> messageRequests)
         {
             var outboxRequests = OutboxRequestMappings.CreateOutboxRequests(messageRequests);
-            await _outboxRepository.AddOutboxRequestsAsync(outboxRequests);
+            await _outboxRepository.AddOutboxRequestsAsync(outboxRequests, CancellationToken.None);
             return Accepted(messageRequests);
         }
     }
